@@ -15,6 +15,12 @@ app.config.env();
 app.config.set('GIT_DIR', shell.exec('git rev-parse --git-dir', {silent:true}).stdout.trim());
 app.config.set('GIT_WORK_TREE', shell.exec('git rev-parse --show-toplevel', {silent:true}).stdout.trim());
 
+// initialize git wrapper
+app.git = new (require('git-wrapper'))({
+    'git-dir': app.config.get('GIT_DIR'),
+    'work-tree': app.config.get('GIT_WORK_TREE')
+});
+
 console.log('App setup:', app.config.get('GIT_WORK_TREE'));
 
 app.use(flatiron.plugins.cli, {
