@@ -55,18 +55,34 @@ module.exports = function(command, source, callback) {
                     var sources = [];
 
                     files.forEach(function(file) {
-                        if (file.data.source) {
-                            file.data.source.name = file.path.substr(12);
-                            sources.push(file.data.source);
+                        var source = file.data.source;
+
+                        if (source) {
+                            source.name = file.path.substr(12);
+
+                            source.before = source.before ? source.before.trim().split(/\s*,\s*/) : [];
+                            source.after = source.after ? source.after.trim().split(/\s*,\s*/) : [];
+
+                            sources.push(source);
                         }
                     });
 
                     sources.sort(function(a, b) {
-                        if (a.before == 'all' || a.before == b.name) {
+                        if (
+                            a.before.indexOf('all') != -1 ||
+                            a.before.indexOf(b.name) != -1 ||
+                            b.after.indexOf('all') != -1 ||
+                            b.after.indexOf(a.name) != -1
+                        ) {
                             return -1;
                         }
 
-                        if (a.after == 'all' || a.after == b.name) {
+                        if (
+                            a.after.indexOf('all') != -1 ||
+                            a.after.indexOf(b.name) != -1 ||
+                            b.before.indexOf('all') != -1 ||
+                            b.before.indexOf(a.name) != -1
+                        ) {
                             return 1;
                         }
 
