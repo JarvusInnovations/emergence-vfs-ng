@@ -63,6 +63,10 @@ module.exports = function(command, source, callback) {
                             source.before = source.before ? source.before.trim().split(/\s*,\s*/) : [];
                             source.after = source.after ? source.after.trim().split(/\s*,\s*/) : [];
 
+                            if (!source.branch) {
+                                source.branch = 'master';
+                            }
+
                             sources.push(source);
                         }
                     });
