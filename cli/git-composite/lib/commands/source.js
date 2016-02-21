@@ -16,7 +16,7 @@ module.exports = function(command, source, callback) {
                 r: true, // recursive
             },
             [
-                'master', // tree
+                'HEAD', // tree
 
                 // paths:
                 '.gitsources'
