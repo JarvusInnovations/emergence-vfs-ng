@@ -6,7 +6,7 @@ var app = require('../app'),
     lib = module.exports = {},
 
     // internal caches
-    definedSources;
+    cachedSources;
 
 
 /**
@@ -45,8 +45,8 @@ lib.sortSources = function(sources, callback) {
  * Gets an array of sources as defined in .gitsources/ at HEAD
  */
 lib.getSources = function(callback) {
-    if (definedSources) {
-        return callback(null, definedSources);
+    if (cachedSources) {
+        return callback(null, cachedSources);
     }
 
     // 1) get deep list of files from .gitsources for HEAD
@@ -116,7 +116,7 @@ lib.getSources = function(callback) {
                 // 5) sort sources
                 lib.sortSources(sources, function(error, sortedSources) {
                     // save in lib cache
-                    definedSources = sortedSources;
+                    cachedSources = sortedSources;
 
                     // 6) finish operation passing results to callback
                     callback(null, sortedSources);
