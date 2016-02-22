@@ -22,7 +22,7 @@ module.exports = function(callback) {
                             return callback(error);
                         }
 
-                        console.log('git:', output.trim());
+                        app.log.info('git:', output.trim());
 
                         callback();
                     });
@@ -71,7 +71,7 @@ module.exports = function(callback) {
                         return callback();
                     }
 
-                    console.log('Updating source object paths in', alternatesFilePath);
+                    app.log.info('Updating source object paths in', alternatesFilePath);
                     fs.writeFile(alternatesFilePath, contentsToWrite, 'utf8', callback);
                 });
             },
@@ -85,10 +85,10 @@ module.exports = function(callback) {
                         }
 
                         if (remoteOutput && remoteOutput.split('\n').indexOf('origin') != -1) {
-                            console.log('Updating origin for', source.name, 'to', source.url);
+                            app.log.info('Updating origin for', source.name, 'to', source.url);
                             lib.execGit('remote set-url', { 'git-dir': source.gitDir }, ['origin', source.url], callback);
                         } else {
-                            console.log('Adding origin for', source.name, 'to', source.url);
+                            app.log.info('Adding origin for', source.name, 'to', source.url);
                             lib.execGit('remote add', { 'git-dir': source.gitDir }, ['origin', source.url], callback);
                         }
                     });
@@ -98,7 +98,7 @@ module.exports = function(callback) {
             // 5) fetch needed branch for each source
             function(callback) {
                 async.each(sourcesMap, function(source, callback) {
-                    console.log('Fetching', source.branch, 'for', source.name);
+                    app.log.info('Fetching', source.branch, 'for', source.name);
                     lib.execGit('fetch', { 'git-dir': source.gitDir }, ['origin', source.branch], callback);
                 }, callback);
             }
