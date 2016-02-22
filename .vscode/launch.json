@@ -5,7 +5,26 @@
 			"name": "git-source init",
 			"type": "node",
 			"request": "launch",
-			"program": "${workspaceRoot}/cli/git-source/app.js",
+			"program": "${workspaceRoot}/cli/git-source/source.js",
+			"stopOnEntry": false,
+			"args": ["init"],
+			"cwd": "${workspaceRoot}/mocks/slate3",
+			"runtimeExecutable": null,
+			"runtimeArgs": [
+				"--nolazy"
+			],
+			"env": {
+				"NODE_ENV": "development"
+			},
+			"externalConsole": false,
+			"sourceMaps": false,
+			"outDir": null
+		},
+		{
+			"name": "git-mount init",
+			"type": "node",
+			"request": "launch",
+			"program": "${workspaceRoot}/cli/git-source/mount.js",
 			"stopOnEntry": false,
 			"args": ["init"],
 			"cwd": "${workspaceRoot}/mocks/slate3",
