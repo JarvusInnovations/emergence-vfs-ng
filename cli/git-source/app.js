@@ -4,11 +4,13 @@ var flatiron = require('flatiron'),
     path = require('path'),
     fs = require('fs'),
     async = require('async'),
-    app = flatiron.app,
-    lib = app.lib = require('./lib');
+    app = flatiron.app;
 
 // export app instance
 module.exports = app;
+
+// load lib
+lib = app.lib = require('./lib');
 
 // load environment into config
 app.config.env();
