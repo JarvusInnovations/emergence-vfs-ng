@@ -93,6 +93,14 @@ module.exports = function(callback) {
                         }
                     });
                 }, callback);
+            },
+
+            // 5) fetch needed branch for each source
+            function(callback) {
+                async.each(sourcesMap, function(source, callback) {
+                    console.log('Fetching', source.branch, 'for', source.name);
+                    lib.execGit('fetch', { 'git-dir': source.gitDir }, ['origin', source.branch], callback);
+                }, callback);
             }
 
         ], callback);
