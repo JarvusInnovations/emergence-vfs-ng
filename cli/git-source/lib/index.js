@@ -53,7 +53,7 @@ lib.getSources = function(callback) {
     }
 
     // 1) get deep list of files from .gitsources for HEAD
-    app.git.exec(
+    lib.execGit(
         'ls-tree',
         {
             r: true, // recursive
@@ -70,7 +70,7 @@ lib.getSources = function(callback) {
             }
 
             // 2) parse array of file objects out of multiline output string
-            var files = output.trim().split(/\n/).map(function(line) {
+            var files = output.split(/\n/).map(function(line) {
                 line = line.split(/\s/);
                 return {
                     mode: line[0],
@@ -82,7 +82,7 @@ lib.getSources = function(callback) {
 
             // 3) load contents of all .gitsources files and parse with ini package
             async.each(files, function(file, callback) {
-                app.git.exec('show', [file.hash], function(error, data) {
+                lib.execGit('show', file.hash, function(error, data) {
                     if (error) {
                         return callback(error);
                     }
@@ -113,6 +113,10 @@ lib.getSources = function(callback) {
                         }
 
                         source.gitDir = path.join(app.config.get('GIT_DIR'), 'sources', source.name);
+
+                        source.execGit = function(command, options, args, callback) {
+                            lib.execGitForSource(source, command, options, args, callback);
+                        };
 
                         sources.push(source);
                     }
@@ -193,8 +197,6 @@ lib.cliOptionsToString = function(options) {
  * Execute git command and return trimmed output
  */
 lib.execGit = function(command, options, args, callback) {
-    var gitOptions = {};
-
     callback = arguments[arguments.length - 1];
 
     switch (arguments.length) {
@@ -216,19 +218,12 @@ lib.execGit = function(command, options, args, callback) {
             break;
     }
 
-    // extract git-level options
-    if ('git-dir' in options) {
-        gitOptions['git-dir'] = options['git-dir'];
-        delete options['git-dir'];
-    }
-
-    if ('work-tree' in options) {
-        gitOptions['work-tree'] = options['work-tree'];
-        delete options['work-tree'];
-    }
-
     // prefix command with git and gitOptions
-    command = 'git ' + lib.cliOptionsToString(gitOptions) +  ' ' + command;
+    if (options._git) {
+        command = lib.cliOptionsToString(options._git) +  ' ' + command;
+    }
+
+    command = 'git ' + command;
 
     // append options
     command += ' ' + lib.cliOptionsToString(options);
@@ -239,4 +234,35 @@ lib.execGit = function(command, options, args, callback) {
     exec(command, function (error, stdout, stderr) {
         callback(error, stdout ? stdout.trim() : null);
     });
+};
+
+/**
+ * Execute git command and return trimmed output for a given source
+ */
+lib.execGitForSource = function(source, command, options, args, callback) {
+    callback = arguments[arguments.length - 1];
+
+    switch (arguments.length) {
+        case 1:
+            throw 'command and callback required';
+        case 2:
+            // only minimum command and callback porvided
+            options = {};
+            args = [];
+            break;
+        case 3:
+            // middle one is args or options
+            if (Array.isArray(options) || typeof options == 'string') {
+                args = options;
+                options = {};
+            } else {
+                args = [];
+            }
+            break;
+    }
+
+    options._git = options._git || {};
+    options._git['git-dir'] = source.gitDir;
+
+    lib.execGit(command, options, args, callback);
 };

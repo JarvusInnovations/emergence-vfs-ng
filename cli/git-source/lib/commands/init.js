@@ -22,7 +22,7 @@ module.exports = function(callback) {
                             return callback(error);
                         }
 
-                        app.log.info('git:', output.trim());
+                        app.log.info('git:', output);
 
                         callback();
                     });
@@ -79,17 +79,17 @@ module.exports = function(callback) {
             // 4) ensure origin is set to correct url
             function(callback) {
                 async.each(sourcesMap, function(source, callback) {
-                    lib.execGit('remote', { 'git-dir': source.gitDir }, function(error, remoteOutput) {
+                    source.execGit('remote', function(error, remoteOutput) {
                         if (error) {
                             return callback(error);
                         }
 
                         if (remoteOutput && remoteOutput.split('\n').indexOf('origin') != -1) {
                             app.log.info('Updating origin for', source.name, 'to', source.url);
-                            lib.execGit('remote set-url', { 'git-dir': source.gitDir }, ['origin', source.url], callback);
+                            source.execGit('remote set-url', ['origin', source.url], callback);
                         } else {
                             app.log.info('Adding origin for', source.name, 'to', source.url);
-                            lib.execGit('remote add', { 'git-dir': source.gitDir }, ['origin', source.url], callback);
+                            source.execGit('remote add', ['origin', source.url], callback);
                         }
                     });
                 }, callback);
@@ -99,7 +99,7 @@ module.exports = function(callback) {
             function(callback) {
                 async.each(sourcesMap, function(source, callback) {
                     app.log.info('Fetching', source.branch, 'for', source.name);
-                    lib.execGit('fetch', { 'git-dir': source.gitDir }, ['origin', source.branch], callback);
+                    source.execGit('fetch', ['origin', source.branch], callback);
                 }, callback);
             }
 

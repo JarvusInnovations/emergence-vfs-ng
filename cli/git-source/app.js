@@ -5,7 +5,7 @@ var flatiron = require('flatiron'),
     fs = require('fs'),
     async = require('async'),
     app = flatiron.app,
-    git = app.git = new (require('git-wrapper'))();
+    lib = app.lib = require('./lib');
 
 // export app instance
 module.exports = app;
@@ -22,12 +22,10 @@ app.use(flatiron.plugins.cli, {
 // initialize environment from git
 async.series([
     function(callback) {
-        git.exec('rev-parse', {'git-dir': true}, [], function(error, output) {
+        lib.execGit('rev-parse', { 'git-dir': true }, function(error, output) {
             if (error) {
                 return callback(error);
             }
-
-            output = output.trim();
 
             fs.realpath(output, function(error, resolvedPath) {
                 if (error) {
@@ -41,12 +39,10 @@ async.series([
         });
     },
     function(callback) {
-        git.exec('rev-parse', {'show-toplevel': true}, [], function(error, output) {
+        lib.execGit('rev-parse', { 'show-toplevel': true }, function(error, output) {
             if (error) {
                 return callback(error);
             }
-
-            output = output.trim();
 
             fs.realpath(output, function(error, resolvedPath) {
                 if (error) {
