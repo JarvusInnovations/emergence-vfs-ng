@@ -1,5 +1,5 @@
-var app = require('../source'), // TODO: everything being used in app should get moved to lib. git-dir/work-tree needs to be async fetched when needed
-    path = require('path'),
+var path = require('path'),
+    fs = require('fs'),
     async = require('async'),
     ini = require('ini'),
     exec = require('child_process').exec,
@@ -8,8 +8,62 @@ var app = require('../source'), // TODO: everything being used in app should get
     lib = module.exports = {},
 
     // internal caches
+    cachedGitDir,
+    cachedWorkTree,
     cachedSources,
     cachedSourcesMap;
+
+
+/**
+ * Gets complete path to git directory
+ */
+lib.getGitDir = function(callback) {
+    if (cachedGitDir) {
+        return callback(null, cachedGitDir);
+    }
+
+    lib.execGit('rev-parse', { 'git-dir': true }, function(error, output) {
+        if (error) {
+            return callback(error);
+        }
+
+        fs.realpath(output, function(error, resolvedPath) {
+            if (error) {
+                return callback(error);
+            }
+
+            cachedGitDir = resolvedPath;
+
+            callback(null, cachedGitDir);
+        });
+    });
+};
+
+
+/**
+ * Gets complete path to working tree
+ */
+lib.getWorkTree = function(callback) {
+    if (cachedWorkTree) {
+        return callback(null, cachedWorkTree);
+    }
+
+    lib.execGit('rev-parse', { 'show-toplevel': true }, function(error, output) {
+        if (error) {
+            return callback(error);
+        }
+
+        fs.realpath(output, function(error, resolvedPath) {
+            if (error) {
+                return callback(error);
+            }
+
+            cachedWorkTree = resolvedPath;
+
+            callback(null, cachedWorkTree);
+        });
+    });
+};
 
 
 /**
@@ -97,40 +151,46 @@ lib.getSources = function(callback) {
                 }
 
                 // 4) compile sources from files
-                var sources = [];
-
-                files.forEach(function(file) {
-                    var source = file.data.source;
-
-                    if (source) {
-                        source.name = file.path.substr(12);
-
-                        source.before = source.before ? source.before.trim().split(/\s*,\s*/) : [];
-                        source.after = source.after ? source.after.trim().split(/\s*,\s*/) : [];
-
-                        if (!source.branch) {
-                            source.branch = 'master';
-                        }
-
-                        source.gitDir = path.join(app.config.get('GIT_DIR'), 'sources', source.name);
-
-                        source.execGit = function(command, options, args, callback) {
-                            var execArgs = Array.prototype.slice.call(arguments);
-                            execArgs.unshift(source);
-                            lib.execGitForSource.apply(lib, execArgs);
-                        };
-
-                        sources.push(source);
+                lib.getGitDir(function(error, gitDir) {
+                    if (error) {
+                        return callback(error);
                     }
-                });
 
-                // 5) sort sources
-                lib.sortSources(sources, function(error, sortedSources) {
-                    // save in lib cache
-                    cachedSources = sortedSources;
+                    var sources = [];
 
-                    // 6) finish operation passing results to callback
-                    callback(null, sortedSources);
+                    files.forEach(function(file) {
+                        var source = file.data.source;
+
+                        if (source) {
+                            source.name = file.path.substr(12);
+
+                            source.before = source.before ? source.before.trim().split(/\s*,\s*/) : [];
+                            source.after = source.after ? source.after.trim().split(/\s*,\s*/) : [];
+
+                            if (!source.branch) {
+                                source.branch = 'master';
+                            }
+
+                            source.gitDir = path.join(gitDir, 'sources', source.name);
+
+                            source.execGit = function(command, options, args, callback) {
+                                var execArgs = Array.prototype.slice.call(arguments);
+                                execArgs.unshift(source);
+                                lib.execGitForSource.apply(lib, execArgs);
+                            };
+
+                            sources.push(source);
+                        }
+                    });
+
+                    // 5) sort sources
+                    lib.sortSources(sources, function(error, sortedSources) {
+                        // save in lib cache
+                        cachedSources = sortedSources;
+
+                        // 6) finish operation passing results to callback
+                        callback(null, sortedSources);
+                    });
                 });
             });
 

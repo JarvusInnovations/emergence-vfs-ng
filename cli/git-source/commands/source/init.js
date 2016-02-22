@@ -31,48 +31,54 @@ module.exports = function(callback) {
 
             // 3) add sources to alternates file for objects
             function(callback) {
-                var alternatesFilePath = path.join(app.config.get('GIT_DIR'), 'objects/info/alternates'),
-                    neededLines = Object.keys(sourcesMap).map(function(sourceName) {
-                        return '../sources/' + sourceName + '/objects';
-                    });
+                lib.getGitDir(function(error, gitDir) {
+                    if (error) {
+                        return callback(error);
+                    }
 
-                fs.readFile(alternatesFilePath, 'utf8', function(error, alternatesFileContents) {
-                    var isSourceRe = /^\.\.\/sources\/.+\/objects$/,
-                        alternatesFileLines = alternatesFileContents ? alternatesFileContents.trim().split(/\n/) : [],
-                        alternatesFileLinesLength = alternatesFileLines.length,
-                        i, line, neededIndex,
-                        neededLinesLength,
-                        linesToWrite = [],
-                        contentsToWrite;
+                    var alternatesFilePath = path.join(gitDir, 'objects/info/alternates'),
+                        neededLines = Object.keys(sourcesMap).map(function(sourceName) {
+                            return '../sources/' + sourceName + '/objects';
+                        });
 
-                    for (i = 0; i < alternatesFileLinesLength; i++) {
-                        line = alternatesFileLines[i];
-                        neededIndex = neededLines.indexOf(line);
+                    fs.readFile(alternatesFilePath, 'utf8', function(error, alternatesFileContents) {
+                        var isSourceRe = /^\.\.\/sources\/.+\/objects$/,
+                            alternatesFileLines = alternatesFileContents ? alternatesFileContents.trim().split(/\n/) : [],
+                            alternatesFileLinesLength = alternatesFileLines.length,
+                            i, line, neededIndex,
+                            neededLinesLength,
+                            linesToWrite = [],
+                            contentsToWrite;
 
-                        // keep lines that match a needed one or don't look like one added by git-source
-                        if (neededIndex != -1 || !isSourceRe.test(line)) {
-                            linesToWrite.push(line);
+                        for (i = 0; i < alternatesFileLinesLength; i++) {
+                            line = alternatesFileLines[i];
+                            neededIndex = neededLines.indexOf(line);
 
-                            // remove matched line from needed lines
-                            if (neededIndex != -1) {
-                                neededLines.splice(neededIndex, 1);
+                            // keep lines that match a needed one or don't look like one added by git-source
+                            if (neededIndex != -1 || !isSourceRe.test(line)) {
+                                linesToWrite.push(line);
+
+                                // remove matched line from needed lines
+                                if (neededIndex != -1) {
+                                    neededLines.splice(neededIndex, 1);
+                                }
                             }
                         }
-                    }
 
-                    neededLinesLength = neededLines.length;
-                    for (i = 0; i < neededLinesLength; i++) {
-                        linesToWrite.push(neededLines[i]);
-                    }
+                        neededLinesLength = neededLines.length;
+                        for (i = 0; i < neededLinesLength; i++) {
+                            linesToWrite.push(neededLines[i]);
+                        }
 
-                    contentsToWrite = linesToWrite.join('\n') + '\n';
+                        contentsToWrite = linesToWrite.join('\n') + '\n';
 
-                    if (contentsToWrite == alternatesFileContents) {
-                        return callback();
-                    }
+                        if (contentsToWrite == alternatesFileContents) {
+                            return callback();
+                        }
 
-                    app.log.info('Updating source object paths in', alternatesFilePath);
-                    fs.writeFile(alternatesFilePath, contentsToWrite, 'utf8', callback);
+                        app.log.info('Updating source object paths in', alternatesFilePath);
+                        fs.writeFile(alternatesFilePath, contentsToWrite, 'utf8', callback);
+                    });
                 });
             },
 
