@@ -1,4 +1,5 @@
 var app = require('../app'),
+    path = require('path'),
     async = require('async'),
     ini = require('ini'),
 
@@ -6,7 +7,8 @@ var app = require('../app'),
     lib = module.exports = {},
 
     // internal caches
-    cachedSources;
+    cachedSources,
+    cachedSourcesMap;
 
 
 /**
@@ -109,6 +111,8 @@ lib.getSources = function(callback) {
                             source.branch = 'master';
                         }
 
+                        source.gitDir = path.join(app.config.get('GIT_DIR'), 'sources', source.name);
+
                         sources.push(source);
                     }
                 });
@@ -125,4 +129,32 @@ lib.getSources = function(callback) {
 
         }
     );
+};
+
+
+/**
+ * Get object mapping sources to their names
+ */
+lib.getSourcesMap = function(callback) {
+    if (cachedSourcesMap) {
+        return callback(null, cachedSourcesMap);
+    }
+
+    lib.getSources(function(error, sources) {
+        if (error) {
+            return callback(error);
+        }
+
+        var sourcesMap = {},
+            sourcesLength = sources.length,
+            i = 0, source;
+
+        for (; i < sourcesLength; i++) {
+            source = sources[i];
+            sourcesMap[source.name] = source;
+        }
+
+        cachedSourcesMap = sourcesMap;
+        callback(null, sourcesMap)
+    });
 };
