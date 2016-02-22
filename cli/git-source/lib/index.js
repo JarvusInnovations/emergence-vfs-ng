@@ -115,9 +115,9 @@ lib.getSources = function(callback) {
                         source.gitDir = path.join(app.config.get('GIT_DIR'), 'sources', source.name);
 
                         source.execGit = function(command, options, args, callback) {
-                            var args = Array.prototype.slice.call(arguments);
-                            args.unshift(source);
-                            lib.execGitForSource.apply(lib, args);
+                            var execArgs = Array.prototype.slice.call(arguments);
+                            execArgs.unshift(source);
+                            lib.execGitForSource.apply(lib, execArgs);
                         };
 
                         sources.push(source);
