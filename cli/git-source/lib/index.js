@@ -90,7 +90,7 @@ lib.getSources = function(callback) {
                 });
             }, function(error) {
                 if (error) {
-                    throw error;
+                    return callback(error);
                 }
 
                 // 4) compile sources from files
