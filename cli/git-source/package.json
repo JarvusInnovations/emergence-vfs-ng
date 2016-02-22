@@ -15,5 +15,8 @@
   },
   "name": "git-source",
   "author": "Chris Alfano",
-  "homepage": "http://emr.ge/git-source"
+  "homepage": "http://emr.ge/git-source",
+  "bin": {
+    "git-source": "./app.js"
+  }
 }
