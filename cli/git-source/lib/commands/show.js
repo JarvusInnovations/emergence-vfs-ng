@@ -1,7 +1,7 @@
 var lib = require('../');
 
 module.exports = function(callback) {
-    lib.getDefinedSources(function(error, sources) {
+    lib.getSources(function(error, sources) {
         if (error) {
             return callback(error);
         }

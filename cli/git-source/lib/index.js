@@ -44,7 +44,7 @@ lib.sortSources = function(sources, callback) {
 /**
  * Gets an array of sources as defined in .gitsources/ at HEAD
  */
-lib.getDefinedSources = function(callback) {
+lib.getSources = function(callback) {
     if (definedSources) {
         return callback(null, definedSources);
     }
