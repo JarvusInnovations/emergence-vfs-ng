@@ -4,7 +4,8 @@
   "private": true,
   "dependencies": {
     "flatiron": "0.4.3",
-    "git-wrapper": "^0.1.1"
+    "git-wrapper": "^0.1.1",
+    "async": "^1.5.2"
   },
   "devDependencies": {
     "cli-easy": "0.1.0",
