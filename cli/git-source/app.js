@@ -4,7 +4,8 @@ var flatiron = require('flatiron'),
     path = require('path'),
     fs = require('fs'),
     async = require('async'),
-    app = flatiron.app;
+    app = flatiron.app,
+    lib;
 
 // export app instance
 module.exports = app;
