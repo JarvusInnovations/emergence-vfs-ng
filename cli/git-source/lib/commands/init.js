@@ -85,8 +85,10 @@ module.exports = function(callback) {
                         }
 
                         if (remoteOutput && remoteOutput.split('\n').indexOf('origin') != -1) {
+                            console.log('Updating origin for', source.name, 'to', source.url);
                             lib.execGit('remote set-url', { 'git-dir': source.gitDir }, ['origin', source.url], callback);
                         } else {
+                            console.log('Adding origin for', source.name, 'to', source.url);
                             lib.execGit('remote add', { 'git-dir': source.gitDir }, ['origin', source.url], callback);
                         }
                     });
