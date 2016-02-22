@@ -244,13 +244,14 @@ lib.execGitForSource = function(source, command, options, args, callback) {
 
     switch (arguments.length) {
         case 1:
-            throw 'command and callback required';
         case 2:
+            throw 'source, command, callback required';
+        case 3:
             // only minimum command and callback porvided
             options = {};
             args = [];
             break;
-        case 3:
+        case 4:
             // middle one is args or options
             if (Array.isArray(options) || typeof options == 'string') {
                 args = options;
