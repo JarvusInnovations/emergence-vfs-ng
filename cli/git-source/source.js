@@ -18,7 +18,7 @@ app.config.env();
 
 // configure flatiron cli plugin
 app.use(flatiron.plugins.cli, {
-  source: path.join(__dirname, 'lib', 'commands'),
+  source: path.join(__dirname, 'commands', 'source'),
   usage: 'Empty Flatiron Application, please fill out commands'
 });
 

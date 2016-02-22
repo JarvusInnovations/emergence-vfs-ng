@@ -1,4 +1,4 @@
-var app = require('../app'),
+var app = require('../source'), // TODO: everything being used in app should get moved to lib. git-dir/work-tree needs to be async fetched when needed
     path = require('path'),
     async = require('async'),
     ini = require('ini'),

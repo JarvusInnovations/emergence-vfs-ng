@@ -1,4 +1,4 @@
-var lib = require('../');
+var lib = require('../../lib');
 
 module.exports = function(callback) {
     lib.getSources(function(error, sources) {

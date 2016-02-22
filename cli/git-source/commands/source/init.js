@@ -1,8 +1,8 @@
-var app = require('../../app'),
+var app = require('../../source'),
     path = require('path'),
     fs = require('fs'),
     async = require('async'),
-    lib = require('../');
+    lib = require('../../lib');
 
 module.exports = function(callback) {
 
