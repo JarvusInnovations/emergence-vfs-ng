@@ -7,7 +7,8 @@ var flatiron = require('flatiron'),
 // export app instance
 module.exports = app;
 
-app.config.file({ file: path.join(__dirname, 'config', 'config.json') });
+// load environment into config
+app.config.env();
 
 app.use(flatiron.plugins.cli, {
   source: path.join(__dirname, 'lib', 'commands'),
