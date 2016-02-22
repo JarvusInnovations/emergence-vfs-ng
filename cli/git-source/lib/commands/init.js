@@ -74,6 +74,23 @@ module.exports = function(callback) {
                     console.log('Updating source object paths in', alternatesFilePath);
                     fs.writeFile(alternatesFilePath, contentsToWrite, 'utf8', callback);
                 });
+            },
+
+            // 4) ensure origin is set to correct url
+            function(callback) {
+                async.each(sourcesMap, function(source, callback) {
+                    lib.execGit('remote', { 'git-dir': source.gitDir }, function(error, remoteOutput) {
+                        if (error) {
+                            return callback(error);
+                        }
+
+                        if (remoteOutput && remoteOutput.split('\n').indexOf('origin') != -1) {
+                            lib.execGit('remote set-url', { 'git-dir': source.gitDir }, ['origin', source.url], callback);
+                        } else {
+                            lib.execGit('remote add', { 'git-dir': source.gitDir }, ['origin', source.url], callback);
+                        }
+                    });
+                }, callback);
             }
 
         ], callback);
