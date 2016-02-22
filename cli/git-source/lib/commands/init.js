@@ -17,7 +17,7 @@ module.exports = function(callback) {
             // 2) ensure each is initialized as a git repository
             function(callback) {
                 async.each(sourcesMap, function(source, callback) {
-                    app.git.exec('init', { bare: true }, [source.gitDir], function(error, output) {
+                    lib.execGit('init', { bare: true }, source.gitDir, function(error, output) {
                         if (error) {
                             return callback(error);
                         }

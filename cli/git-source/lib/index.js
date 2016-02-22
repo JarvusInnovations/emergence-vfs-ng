@@ -2,6 +2,7 @@ var app = require('../app'),
     path = require('path'),
     async = require('async'),
     ini = require('ini'),
+    exec = require('child_process').exec,
 
     // container for exported library
     lib = module.exports = {},
@@ -156,5 +157,86 @@ lib.getSourcesMap = function(callback) {
 
         cachedSourcesMap = sourcesMap;
         callback(null, sourcesMap)
+    });
+};
+
+
+/**
+ * Convert an options object into CLI arguments string
+ */
+lib.cliOptionsToString = function(options) {
+    var args = [],
+        k, val;
+
+    for (k in options) {
+        val = options[k];
+
+        if (k.length == 1) {
+            if (val === true) {
+                args.push('-'+k);
+            } else if (val !== false) {
+                args.push('-'+k+' '+val);
+            }
+        } else {
+            if (val === true) {
+                args.push('--'+k);
+            } else if (val !== false) {
+                args.push('--'+k+'='+val);
+            }
+        }
+    }
+
+    return args.join(' ');
+};
+
+/**
+ * Execute git command and return trimmed output
+ */
+lib.execGit = function(command, options, args, callback) {
+    var gitOptions = {};
+
+    callback = arguments[arguments.length - 1];
+
+    switch (arguments.length) {
+        case 1:
+            throw 'command and callback required';
+        case 2:
+            // only minimum command and callback porvided
+            options = {};
+            args = [];
+            break;
+        case 3:
+            // middle one is args or options
+            if (Array.isArray(options) || typeof options == 'string') {
+                args = options;
+                options = {};
+            } else {
+                args = [];
+            }
+            break;
+    }
+
+    // extract git-level options
+    if ('git-dir' in options) {
+        gitOptions['git-dir'] = options['git-dir'];
+        delete options['git-dir'];
+    }
+
+    if ('work-tree' in options) {
+        gitOptions['work-tree'] = options['work-tree'];
+        delete options['work-tree'];
+    }
+
+    // prefix command with git and gitOptions
+    command = 'git ' + lib.cliOptionsToString(gitOptions) +  ' ' + command;
+
+    // append options
+    command += ' ' + lib.cliOptionsToString(options);
+
+    // append arguments
+    command += ' ' + (typeof args == 'string' ? args : args.join(' '));
+
+    exec(command, function (error, stdout, stderr) {
+        callback(error, stdout ? stdout.trim() : null);
     });
 };
