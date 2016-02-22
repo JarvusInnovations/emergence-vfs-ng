@@ -173,6 +173,10 @@ lib.cliOptionsToString = function(options) {
         k, val;
 
     for (k in options) {
+        if (k[0] == '_') {
+            continue;
+        }
+
         val = options[k];
 
         if (k.length == 1) {
