@@ -283,6 +283,124 @@ lib.sortMounts = function(mounts, callback) {
 
 
 /**
+ * Gets an array of sources as defined in .gitsources/ at HEAD
+ */
+lib.getMounts = function(callback) {
+    async.auto({
+        getWorkTree: lib.getWorkTree,
+        getSourcesMap: lib.getSourcesMap,
+
+        getMountFiles: [
+            'getWorkTree',
+            function(callback, results) {
+                var workTree = results.getWorkTree;
+
+                lib.execGit(
+                    'ls-files',
+                    {
+                        'full-name': true, // all paths relative to work tree root
+                        'stage': true // include SHA1 in output
+                    },
+                    [
+                        // prepend full path to working tree to prevent impact of CWD
+                        workTree + '/.gitmounts/',
+                        workTree + '/*/.gitmounts/*'
+                    ],
+                    function(error, output) {
+                        if (error) {
+                            return callback(error);
+                        }
+
+                        callback(null, output.split(/\n/).map(function(line) {
+                            line = line.split(/\s/);
+                            return {
+                                mode: line[0],
+                                hash: line[1],
+                                stage: line[2],
+                                path: line[3]
+                            };
+                        }));
+                    }
+                );
+            }
+        ],
+
+        parseMounts: [
+            'getWorkTree',
+            'getSourcesMap',
+            'getMountFiles',
+            function(callback, results) {
+                var workTree = results.getWorkTree,
+                    sourcesMap = results.getSourcesMap,
+                    files = results.getMountFiles,
+                    mountSectionRe = /^mount\b/,
+                    mounts = [];
+
+                async.each(files, function(file, callback) {
+                    lib.execGit('show', file.hash, function(error, data) {
+                        if (error) {
+                            return callback(error);
+                        }
+
+                        var mountsBasePath = path.dirname(file.path).replace(/(^|\/)\.gitmounts(\/|$)/, '$1'),
+                            fileBaseName = path.basename(file.path),
+                            section, mount;
+
+                        file.data = ini.parse(data);
+
+                        for (section in file.data) {
+                            if (!mountSectionRe.test(section)) {
+                                continue;
+                            }
+
+                            mount = file.data[section];
+                            mount.name = section.length > 5 ? section.substr(5).trim() : fileBaseName; // TODO: make names unique?
+                            mount.source = mount.source || fileBaseName;
+
+                            mount.mountpath = mount.mountpath || mount.path || './';
+                            mount.mountpath = path.join(workTree, mountsBasePath, mount.mountpath);
+
+                            mount.sourcepath = mount.sourcepath || mount.path || './';
+                            mount.sourcepath = mount.sourcepath[0] == '/' ? path.join(mount.sourcepath) : path.join('/', mountsBasePath, mount.sourcepath);
+
+                            delete mount.path;
+
+                            if (!(mount.source in sourcesMap)) {
+                                return callback(new Error('undefined source "' + mount.source + '" in ' + file.path));
+                            }
+
+                            mounts.push(mount);
+                        }
+
+                        callback(null);
+                    });
+                }, function(error) {
+                    if (error) {
+                        return callback(error);
+                    }
+
+                    callback(null, mounts);
+                });
+            }
+        ],
+
+        sortMounts: [
+            'parseMounts',
+            function(callback, results) {
+                lib.sortMounts(results.parseMounts, callback);
+            }
+        ]
+    }, function(error, results) {
+        if (error) {
+            return callback(error);
+        }
+
+        callback(null, results.sortMounts);
+    });
+};
+
+
+/**
  * Convert an options object into CLI arguments string
  */
 lib.cliOptionsToString = function(options) {
