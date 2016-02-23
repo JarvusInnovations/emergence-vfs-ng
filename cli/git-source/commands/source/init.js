@@ -105,7 +105,7 @@ module.exports = function(callback) {
             function(callback) {
                 async.each(sourcesMap, function(source, callback) {
                     app.log.info('Fetching', source.branch, 'for', source.name);
-                    source.execGit('fetch', ['origin', source.branch], callback);
+                    source.execGit('fetch', { depth: 1 }, ['origin', source.branch], callback);
                 }, callback);
             }
 
