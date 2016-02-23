@@ -108,7 +108,7 @@ module.exports = function(callback) {
                                     mount = file.data[section];
                                     mount.name = section.length > 5 ? section.substr(5).trim() : fileBaseName; // TODO: make names unique?
                                     mount.source = mount.source || fileBaseName;
-5
+
                                     mount.mountpath = mount.mountpath || mount.path || './';
                                     mount.mountpath = path.join(workTree, mountsBasePath, mount.mountpath);
 
@@ -132,10 +132,7 @@ module.exports = function(callback) {
                                 return callback(error);
                             }
 
-                            // TODO: sort mounts by their sources
-
-                            console.log(require('util').inspect(mounts));
-                            callback(null, mounts);
+                            lib.sortMounts(mounts, callback);
                         });
                     }
                 );

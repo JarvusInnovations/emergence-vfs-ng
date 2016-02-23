@@ -11,7 +11,8 @@ var path = require('path'),
     cachedGitDir,
     cachedWorkTree,
     cachedSources,
-    cachedSourcesMap;
+    cachedSourcesMap,
+    cachedSourcesOrder;
 
 
 /**
@@ -223,6 +224,60 @@ lib.getSourcesMap = function(callback) {
 
         cachedSourcesMap = sourcesMap;
         callback(null, sourcesMap)
+    });
+};
+
+
+/**
+ * Get list of sources in sorted order
+ */
+lib.getSourcesOrder = function(callback) {
+    if (cachedSourcesOrder) {
+        return callback(null, cachedSourcesOrder);
+    }
+
+    lib.getSources(function(error, sources) {
+        if (error) {
+            return callback(error);
+        }
+
+        var sourcesOrder = [],
+            sourcesLength = sources.length,
+            i = 0;
+
+        for (; i < sourcesLength; i++) {
+            sourcesOrder.push(sources[i].name);
+        }
+
+        cachedSourcesOrder = sourcesOrder;
+        callback(null, sourcesOrder)
+    });
+};
+
+
+/**
+ * Sorts an array of mounts by their sources
+ */
+lib.sortMounts = function(mounts, callback) {
+    mounts = mounts.concat(); // clone array to avoid modifying input
+
+    lib.getSourcesOrder(function(error, sourcesOrder) {
+        if (error) {
+            return callback(error);
+        }
+
+        mounts.sort(function(a, b) {
+            a = sourcesOrder.indexOf(a.source);
+            b = sourcesOrder.indexOf(b.source);
+
+            if (a == b) {
+                return 0;
+            }
+
+            return a < b ? -1 : 1;
+        });
+
+        callback(null, mounts);
     });
 };
 
