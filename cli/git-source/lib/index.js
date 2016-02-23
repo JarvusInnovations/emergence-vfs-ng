@@ -303,8 +303,8 @@ lib.getMounts = function(callback) {
                     },
                     [
                         // prepend full path to working tree to prevent impact of CWD
-                        workTree + '/.gitmounts/',
-                        workTree + '/*/.gitmounts/*'
+                        '"' + workTree + '/.gitmounts/"',
+                        '"' + workTree + '/*/.gitmounts/*"'
                     ],
                     function(error, output) {
                         if (error) {
@@ -470,6 +470,7 @@ lib.execGit = function(command, options, args, callback) {
     // append arguments
     command += ' ' + (typeof args == 'string' ? args : args.join(' '));
 
+    console.log('exec:', command);
     exec(command, function (error, stdout, stderr) {
         callback(error, stdout ? stdout.trim() : null);
     });
