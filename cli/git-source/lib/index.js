@@ -301,11 +301,11 @@ lib.getMounts = function(callback) {
                         'full-name': true, // all paths relative to work tree root
                         'stage': true // include SHA1 in output
                     },
-                    [
+                    lib.shellQuote([
                         // prepend full path to working tree to prevent impact of CWD
-                        '"' + workTree + '/.gitmounts/"',
-                        '"' + workTree + '/*/.gitmounts/*"'
-                    ],
+                        workTree + '/.gitmounts/',
+                        workTree + '/*/.gitmounts/*'
+                    ]),
                     function(error, output) {
                         if (error) {
                             return callback(error);
@@ -432,6 +432,7 @@ lib.cliOptionsToString = function(options) {
     return args.join(' ');
 };
 
+
 /**
  * Execute git command and return trimmed output
  */
@@ -476,6 +477,7 @@ lib.execGit = function(command, options, args, callback) {
     });
 };
 
+
 /**
  * Execute git command and return trimmed output for a given source
  */
@@ -507,3 +509,29 @@ lib.execGitForSource = function(source, command, options, args, callback) {
 
     lib.execGit(command, options, args, callback);
 };
+
+
+(function() {
+    var doubleQuoteOrSpaceRe = /["\s]/,
+        singleQuoteRe = /'/,
+        anyQuoteOrSpaceRe = /["'\s]/,
+        singleQuoteEscapablesRe = /(['\\])/g,
+        doubleQuoteEscapablesRe = /(["\\$`!])/g,
+        unquotedEscapablesRe = /([\\$`()!#&*|])/g;
+
+    lib.shellQuote = function(arg) {
+        if (typeof arg == 'string') {
+            arg = [arg];
+        }
+
+        return arg.map(function(arg) {
+            if (doubleQuoteOrSpaceRe.test(arg) && !singleQuoteRe.test(arg)) {
+                return "'" + arg.replace(singleQuoteEscapablesRe, '\\$1') + "'";
+            } else if (anyQuoteOrSpaceRe.test(arg)) {
+                return '"' + arg.replace(doubleQuoteEscapablesRe, '\\$1') + '"';
+            }
+
+            return String(arg).replace(unquotedEscapablesRe, '\\$1');
+        }).join(' ');
+    };
+})();
