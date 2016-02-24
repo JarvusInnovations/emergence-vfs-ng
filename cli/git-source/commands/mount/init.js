@@ -89,6 +89,11 @@ module.exports = function(callback) {
                                     ],
                                 callback);
                             } else if (output == 'blob') {
+                                // automatically append filename if mount path is explicitly a directory
+                                if (mount.mountpath.substr(-1) == '/') {
+                                    quotedMountPath += lib.shellQuote(path.basename(mount.sourcepath));
+                                }
+
                                 source.execGit(
                                     'show',
                                     [
