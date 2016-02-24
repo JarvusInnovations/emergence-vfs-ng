@@ -335,12 +335,10 @@ lib.getMounts = function(callback) {
         ],
 
         parseMounts: [
-            'getWorkTree',
             'getSourcesMap',
             'getMountFiles',
             function(callback, results) {
-                var workTree = results.getWorkTree,
-                    sourcesMap = results.getSourcesMap,
+                var sourcesMap = results.getSourcesMap,
                     files = results.getMountFiles,
                     mountSectionRe = /^mount\b/,
                     mounts = [];
@@ -367,7 +365,7 @@ lib.getMounts = function(callback) {
                             mount.source = mount.source || fileBaseName;
 
                             mount.mountpath = mount.mountpath || mount.path || './';
-                            mount.mountpath = path.join(workTree, mountsBasePath, mount.mountpath);
+                            mount.mountpath = path.join(mountsBasePath, mount.mountpath);
 
                             mount.sourcepath = mount.sourcepath || mount.path || './';
                             mount.sourcepath = mount.sourcepath[0] == '/' ? path.join(mount.sourcepath) : path.join('/', mountsBasePath, mount.sourcepath);

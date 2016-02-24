@@ -4,7 +4,8 @@ var app = require('../../mount'),
     path = require('path'),
     fs = require('fs'),
     async = require('async'),
-    ini = require('ini');
+    ini = require('ini'),
+    regExpQuote = require('regexp-quote');
 
 module.exports = function(callback) {
     app.log.info('in `git mount build-tree`');
@@ -18,17 +19,16 @@ module.exports = function(callback) {
          *
          * Is this step even useful for the build-tree operation or should we go directly to the composite tree built by compileTree?
          */
-        mapTree: [
+        getPathLayers: [
             'getSourcesMap',
             'getMounts',
             function(callback, results) {
                 var sourcesMap = results.getSourcesMap,
-                    tree = {};
+                    pathLayers = {};
 
                 async.eachSeries(results.getMounts, function(mount, callback) {
                     var source = sourcesMap[mount.source],
-                        quotedSourceRef = lib.shellQuote(source.branch + ':' + mount.sourcepath.substr(1)),
-                        quotedMountPath = lib.shellQuote(mount.mountpath);
+                        quotedSourceRef = lib.shellQuote(source.branch + ':' + mount.sourcepath.substr(1));
 
                     source.execGit(
                         'cat-file',
@@ -45,18 +45,20 @@ module.exports = function(callback) {
 
                                     var lineRe = /^([^ ]+) ([^ ]+) ([^\t]+)\t(.*)/,
                                         treeBlobsLength = treeBlobs.length,
-                                        i = 0, treeBlob, path, treePathFiles;
+                                        i = 0, treeBlob, mountPath, mountPathLayers;
 
                                     for (; i < treeBlobsLength; i++) {
                                         treeBlob = lineRe.exec(treeBlobs[i]);
-                                        path = treeBlob[4];
-                                        treePathFiles = tree[path];
+                                        mountPath = path.join(mount.mountpath, treeBlob[4]);
 
-                                        if (!treePathFiles) {
-                                            treePathFiles = tree[path] = [];
+                                        // get layers array for path
+                                        mountPathLayers = pathLayers[mountPath];
+                                        if (!mountPathLayers) {
+                                            mountPathLayers = pathLayers[mountPath] = [];
                                         }
 
-                                        treePathFiles.push({
+                                        // push layer for this source
+                                        mountPathLayers.push({
                                             source: source,
                                             hash: treeBlob[3]
                                         });
@@ -65,57 +67,84 @@ module.exports = function(callback) {
                                     callback();
                                 });
                             } else if (sourceObjectType == 'blob') {
-                                // automatically append filename if mount path is explicitly a directory
-                                if (mount.mountpath.substr(-1) == '/') {
-                                    quotedMountPath += lib.shellQuote(path.basename(mount.sourcepath));
-                                }
-                                app.log.warn('TODO: handle blob mount', quotedSourceRef);
-                                //debugger;
-                                callback();
-                                // source.execGit(
-                                //     'show',
-                                //     [
-                                //         quotedSourceRef,
-                                //         '>', quotedMountPath
-                                //     ],
-                                // callback);
+                                source.execGit('ls-tree', lib.shellQuote(source.branch + ':' + path.dirname(mount.sourcepath.substr(1))), function(error, treeBlobs) {
+                                    var blobName = path.basename(mount.sourcepath),
+                                        blobMatch = (new RegExp('[^ ]+ blob ([^\t]+)\t' + regExpQuote(blobName))).exec(treeBlobs),
+                                        mountPath = mount.mountpath,
+                                        mountPathLayers;
+
+                                    if (!blobMatch) {
+                                        return callback(new Error('mount source not found: ' + mount.sourcepath));
+                                    }
+
+                                    // automatically append filename if mount path is explicitly a directory
+                                    if (mountPath.substr(-1) == '/') {
+                                        mountPath += blobName;
+                                    }
+
+                                    // get layers array for path
+                                    mountPathLayers = pathLayers[mountPath];
+                                    if (!mountPathLayers) {
+                                        mountPathLayers = pathLayers[mountPath] = [];
+                                    }
+
+                                        // push layer for this source
+                                    mountPathLayers.push({
+                                        source: source,
+                                        hash: blobMatch[1]
+                                    });
+
+                                    callback();
+                                });
                             } else {
                                 app.log.error();
-                                callback(new Error('mount source must be blob or tree'));
+                                callback(new Error('mount source must be blob or tree: ' + quotedSourceRef));
                             }
                         }
                     );
                 }, function(error) {
-                    callback(error, tree);
+                    callback(error, pathLayers);
                 });
             }
         ],
 
         compileTree: [
-            'mapTree',
+            'getPathLayers',
             function(callback, results) {
-                app.log.warn('TODO: compileTree');
-                // TODO: build up a new tree from map where objects are trees and blobs are strings:
-                /**
-                 *  {
-                 *      'php-classes': {
-                 *          'Person.class.php': 'ABCDEF123...',
-                 *          'Emergence': {
-                 *              'People': {
-                 *                  'Person.php': 'ABCDEF123...'
-                 *              }
-                 *          }
-                 *      }
-                 *  }
-                 */
+                var pathLayers = results.getPathLayers,
+                    mountPath, mountPathLayers,
+                    rootTree = {},
+                    parentTree, slashIndex, pathParentIndex, treeName, tree;
 
-                callback();
+                for (mountPath in pathLayers) {
+                    mountPathLayers = pathLayers[mountPath];
+                    parentTree = rootTree;
+                    pathParentIndex = 0;
+
+                    while ((slashIndex = mountPath.indexOf('/', pathParentIndex)) > 0) {
+                        treeName = mountPath.substring(pathParentIndex, slashIndex);
+
+                        tree = parentTree[treeName];
+                        if (!tree) {
+                            tree = parentTree[treeName] = {};
+                        }
+
+                        parentTree = tree;
+                        pathParentIndex = slashIndex + 1;
+                    }
+
+                    // set last source in array as version
+                    parentTree[mountPath.substring(pathParentIndex)] = mountPathLayers[mountPathLayers.length - 1].hash;
+                }
+
+                callback(null, rootTree);
             }
         ],
 
         writeTree: [
             'compileTree',
             function(callback, results) {
+                var rootTree = results.compileTree;
                 app.log.warn('TODO: writeTree');
                 // TODO: apply mktree recursively to compileTree output
 
