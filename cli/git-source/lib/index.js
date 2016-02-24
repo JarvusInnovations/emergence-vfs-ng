@@ -1,4 +1,5 @@
-var path = require('path'),
+var app = require('flatiron').app,
+    path = require('path'),
     fs = require('fs'),
     async = require('async'),
     ini = require('ini'),
@@ -174,10 +175,18 @@ lib.getSources = function(callback) {
 
                             source.gitDir = path.join(gitDir, 'sources', source.name);
 
-                            source.execGit = function(command, options, args, callback) {
+                            source.execGit = function(execOptions, command, options, args, callback) {
                                 var execArgs = Array.prototype.slice.call(arguments);
-                                execArgs.unshift(source);
-                                lib.execGitForSource.apply(lib, execArgs);
+
+                                if (typeof execOptions == 'string') {
+                                    execOptions = {};
+                                    execArgs.unshift(execOptions);
+                                }
+
+                                execOptions.git = execOptions.git || {};
+                                execOptions.git['git-dir'] = source.gitDir;
+
+                                return lib.execGit.apply(lib, execArgs);
                             };
 
                             sources.push(source);
@@ -436,78 +445,55 @@ lib.cliOptionsToString = function(options) {
 /**
  * Execute git command and return trimmed output
  */
-lib.execGit = function(command, options, args, callback) {
-    callback = arguments[arguments.length - 1];
+lib.execGit = function(execOptions, command, options, args, callback) {
+    var execArgs = Array.prototype.slice.call(arguments);
 
-    switch (arguments.length) {
-        case 1:
-            throw 'command and callback required';
-        case 2:
-            // only minimum command and callback porvided
-            options = {};
-            args = [];
-            break;
-        case 3:
-            // middle one is args or options
-            if (Array.isArray(options) || typeof options == 'string') {
-                args = options;
-                options = {};
-            } else {
-                args = [];
-            }
-            break;
+    if (typeof execArgs[0] == 'object') {
+        execOptions = execArgs.shift();
+    } else {
+        execOptions = {};
+    }
+
+    if (typeof execArgs[execArgs.length - 1] == 'function') {
+        callback = execArgs.pop();
+    } else {
+        callback = null;
+    }
+
+    command = execArgs.shift();
+
+    if (typeof command != 'string') {
+        throw 'command required';
     }
 
     // prefix command with git and gitOptions
-    if (options._git) {
-        command = lib.cliOptionsToString(options._git) +  ' ' + command;
+    if (execOptions.git) {
+        command = lib.cliOptionsToString(execOptions.git) +  ' ' + command;
     }
 
     command = 'git ' + command;
 
-    // append options
-    command += ' ' + lib.cliOptionsToString(options);
+    // append all remaining args
+    while (execArgs.length) {
+        args = execArgs.shift();
 
-    // append arguments
-    command += ' ' + (typeof args == 'string' ? args : args.join(' '));
-
-    console.log('exec:', command);
-    exec(command, function (error, stdout, stderr) {
-        callback(error, stdout ? stdout.trim() : null);
-    });
-};
-
-
-/**
- * Execute git command and return trimmed output for a given source
- */
-lib.execGitForSource = function(source, command, options, args, callback) {
-    callback = arguments[arguments.length - 1];
-
-    switch (arguments.length) {
-        case 1:
-        case 2:
-            throw 'source, command, callback required';
-        case 3:
-            // only minimum command and callback porvided
-            options = {};
-            args = [];
-            break;
-        case 4:
-            // middle one is args or options
-            if (Array.isArray(options) || typeof options == 'string') {
-                args = options;
-                options = {};
-            } else {
-                args = [];
-            }
-            break;
+        switch (typeof args) {
+            case 'number':
+            case 'string':
+                command += ' ' + args;
+                break;
+            case 'object':
+                command += ' ' + (Array.isArray(args) ? args.join(' ') : lib.cliOptionsToString(args));
+                break;
+            default:
+                throw 'unhandled execGit argument'
+        }
     }
 
-    options._git = options._git || {};
-    options._git['git-dir'] = source.gitDir;
-
-    lib.execGit(command, options, args, callback);
+    app.log.info(command);
+    exec(command, callback ? function (error, stdout, stderr) {
+        callback(error, stdout ? stdout.trim() : null);
+    } : null);
 };
 
 
