@@ -1,5 +1,6 @@
 var app = require('../../mount'),
     lib = require('../../lib'),
+    util = require('util'),
     path = require('path'),
     fs = require('fs'),
     async = require('async'),
@@ -58,15 +59,59 @@ module.exports = function(callback) {
         ],
 
         writeMounts: [
+            'getSourcesMap',
             'getMounts',
             'verifyWorkTreeClean',
             // 'verifyWorkTreeEmpty',
             function(callback, results) {
-                callback(null, 'ABCDEF0123456789');
+                var sourcesMap = results.getSourcesMap;
+
+                async.eachSeries(results.getMounts, function(mount, callback) {
+                    var source = sourcesMap[mount.source],
+                        quotedSourceRef = lib.shellQuote(source.branch + ':' + mount.sourcepath.substr(1)),
+                        quotedMountPath = lib.shellQuote(mount.mountpath);
+
+                    source.execGit(
+                        'cat-file',
+                        ['-t', quotedSourceRef],
+                        function(error, output) {
+                            if (error) {
+                                return callback(error);
+                            }
+
+                            // TODO: apply excludes?
+                            if (output == 'tree') {
+                                source.execGit(
+                                    'archive',
+                                    [
+                                        quotedSourceRef,
+                                        '|', util.format('(mkdir -p %s && tar -xC %s)', quotedMountPath, quotedMountPath)
+                                    ],
+                                callback);
+                            } else if (output == 'blob') {
+                                source.execGit(
+                                    'show',
+                                    [
+                                        quotedSourceRef,
+                                        '>', quotedMountPath
+                                    ],
+                                callback);
+                            } else {
+                                app.log.error();
+                                callback(new Error('mount source must be blob or tree'));
+                            }
+                        }
+                    );
+                }, callback);
             }
         ]
     }, function(error, results) {
+        if (error) {
+            app.log.error('mount init failed:', error);
+            return callback(error, false);
+        }
+
         app.log.info('mount init finished');
-        callback(error);
+        callback(null, true);
     });
 };
