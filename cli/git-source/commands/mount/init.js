@@ -2,9 +2,7 @@ var app = require('../../mount'),
     lib = require('../../lib'),
     util = require('util'),
     path = require('path'),
-    fs = require('fs'),
-    async = require('async'),
-    ini = require('ini');
+    async = require('async');
 
 module.exports = function(callback) {
     app.log.info('in `git mount init`');
