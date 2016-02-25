@@ -488,7 +488,7 @@ lib.cliOptionsToArgs = function(options) {
             if (val === true) {
                 args.push('-'+k);
             } else if (val !== false) {
-                args.push('-'+k+' '+val);
+                args.push('-'+k, val);
             }
         } else {
             if (val === true) {
@@ -571,7 +571,6 @@ lib.execGit = function(execOptions, command, options, args, callback) {
         } : null);
     } else {
         return child_process.execFile('git', gitArgs, callback ? function (error, stdout, stderr) {
-            gitArgs;
             callback(error, stdout.trim());
         } : null);
     }
