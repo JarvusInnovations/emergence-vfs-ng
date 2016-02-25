@@ -408,6 +408,69 @@ lib.getMounts = function(callback) {
 
 
 /**
+ * @private
+ * Get or create mktree cargo
+ *
+ * TODO: try to implement this using mktree's --batch option to handle multiple trees per process? Not clear how to match results to the callback for each task
+ */
+// var getMktreeCargo = function() {
+//     return getMktreeCargo.cargo || (getMktreeCargo.cargo = async.cargo(function(treeContentPayload, callback) {
+//         app.log.info('mktree', treeContentPayload);
+//         //debugger;
+//         callback(null, '123treehashhere');
+//     }, 3));
+// };
+
+/**
+ * @private
+ * Get or create mktree queue
+ */
+var getMktreeQueue = function() {
+    return getMktreeQueue.queue || (getMktreeQueue.queue = async.queue(function(treeContent, callback) {
+        var mktree = lib.execGit({ spawn: true }, 'mktree'),
+            output = '';
+
+        mktree.stdout.on('data', function(data) {
+            output += data;
+        });
+
+        mktree.stderr.on('data', function(data) {
+            app.log.error('mktree:', data);
+        });
+
+        mktree.on('close', function(code) {
+            callback(null, output.trim());
+        });
+
+        mktree.stdin.end(treeContent);
+    }, 5));
+};
+
+
+/**
+ * Write a tree to the objects db
+ */
+lib.writeTree = function(tree, callback) {
+    var treeContent = '',
+        mktreeQueue = getMktreeQueue();
+
+    async.forEachOf(tree, function (object, objectName, callback) {
+        if (typeof object == 'string') {
+            treeContent += '100644 blob ' + object + '\t' + objectName + '\n';
+            callback(null, object);
+        } else {
+            lib.writeTree(object, function(error, hash) {
+                treeContent += '040000 tree ' + hash + '\t' + objectName + '\n';
+                callback(null, hash);
+            });
+        }
+    }, function(error) {
+        mktreeQueue.push(treeContent, callback);
+    });
+};
+
+
+/**
  * Convert an options object into CLI arguments string
  */
 lib.cliOptionsToArgs = function(options) {

@@ -145,11 +145,15 @@ module.exports = function(callback) {
         writeTree: [
             'compileTree',
             function(callback, results) {
-                var rootTree = results.compileTree;
-                app.log.warn('TODO: writeTree');
-                // TODO: apply mktree recursively to compileTree output
+                lib.writeTree(results.compileTree, callback);
+            }
+        ],
 
-                callback();
+        commit: [
+            'writeTree',
+            function(callback, results) {
+                var tree = results.writeTree;
+                app.log.info('Composite tree ready:', tree);
             }
         ]
     }, function(error, results) {
