@@ -151,7 +151,7 @@ module.exports = function(callback) {
             function(callback, results) {
                 var tree = results.writeTree;
 
-                lib.execGit('show-ref', { s: true }, 'virtual', function(error, lastCommit) {
+                lib.execGit('rev-parse', 'virtual', function(error, lastCommit) {
                     var commitOptions = { m: '(Re)built composite tree' };
 
                     if (lastCommit) {
