@@ -153,7 +153,19 @@ module.exports = function(callback) {
             'writeTree',
             function(callback, results) {
                 var tree = results.writeTree;
-                app.log.info('Composite tree ready:', tree);
+
+                lib.execGit('show-ref', { s: true }, 'virtual', function(error, lastCommit) {
+                    var commitOptions = { m: '(Re)built composite tree' };
+
+                    if (lastCommit) {
+                        commitOptions.p = lastCommit;
+                    }
+
+                    lib.execGit('commit-tree', commitOptions, tree, function(error, commit) {
+                        app.log.info('Created commit %s, advancing branch virtual', commit);
+                        lib.execGit('branch', '-f', 'virtual', commit, callback);
+                    });
+                });
             }
         ]
     }, function(error, results) {
