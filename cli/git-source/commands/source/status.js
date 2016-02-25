@@ -37,8 +37,8 @@ module.exports = function(callback) {
                             return callback();
                         }
 
-                        source.execGit('rev-parse', 'shallow', function(error, shallow) {
-                            source.shallow = shallow == 'shallow' ? false : shallow;
+                        source.execGit('rev-parse', 'shallow', function(error, output) {
+                            source.shallow = output == 'shallow' ? false : output;
                             callback();
                         });
                     }
@@ -61,6 +61,44 @@ module.exports = function(callback) {
                             callback();
                         });
                     }
+                ],
+
+                fetchHead: [
+                    'initialized',
+                    function(callback) {
+                        if ('fetchHead' in source) {
+                            return callback();
+                        }
+
+                        if (!source.initialized) {
+                            source.fetchHead = null;
+                            return callback();
+                        }
+
+                        source.execGit('rev-parse', 'FETCH_HEAD', function(error, output) {
+                            source.fetchHead = output == 'FETCH_HEAD' ? false : output;
+                            callback();
+                        });
+                    }
+                ],
+
+                fetchHeadTag: [
+                    'fetchHead',
+                    function(callback, results) {
+                        if ('fetchHeadTag' in source) {
+                            return callback();
+                        }
+
+                        if (!source.fetchHead) {
+                            source.fetchHeadTag = null;
+                            return callback();
+                        }
+
+                        source.execGit('describe', { tags: true }, source.fetchHead, function(error, output) {
+                            source.fetchHeadTag = output || false;
+                            callback();
+                        });
+                    }
                 ]
             }, callback);
         }, function(error) {
@@ -70,10 +108,12 @@ module.exports = function(callback) {
             }
 
             console.log(Table.print(sources.map(function(source) {
+                // TODO: add fetch_head, head ?
                 return {
                     name: source.name,
                     initialized: source.initialized ? '\033[32myes\033[0m' : '\033[31mno\033[0m',
-                    shallow: source.shallow === null ? '' : source.shallow === false ? '\033[31mno\033[0m' : source.shallowTag ? '\033[32m' + source.shallowTag + '\033[0m' : source.shallow.substr(0, 6)
+                    shallow: source.shallow === null ? '' : source.shallow === false ? '\033[31mno\033[0m' : source.shallowTag ? '\033[32m' + source.shallowTag + '\033[0m' : source.shallow.substr(0, 6),
+                    fetchHead: source.fetchHead === null ? '' : source.fetchHead === false ? '\033[31mno\033[0m' : source.fetchHeadTag ? '\033[32m' + source.fetchHeadTag + '\033[0m' : source.fetchHead.substr(0, 6)
                 };
             })));
 
