@@ -2,6 +2,25 @@
 	"version": "0.2.0",
 	"configurations": [
 		{
+			"name": "git-source",
+			"type": "node",
+			"request": "launch",
+			"program": "${workspaceRoot}/cli/git-source/source.js",
+			"stopOnEntry": false,
+			"args": ["--debug"],
+			"cwd": "${workspaceRoot}/mocks/spark-classroom-teacher",
+			"runtimeExecutable": null,
+			"runtimeArgs": [
+				"--nolazy"
+			],
+			"env": {
+				"NODE_ENV": "development"
+			},
+			"externalConsole": false,
+			"sourceMaps": false,
+			"outDir": null
+		},
+		{
 			"name": "git-source init",
 			"type": "node",
 			"request": "launch",
