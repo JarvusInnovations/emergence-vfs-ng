@@ -37,12 +37,8 @@ module.exports = function(callback) {
                             return callback();
                         }
 
-                        fs.readFile(path.join(source.gitDir, 'shallow'), 'utf8', function(error, shallow) {
-                            if (error && error.code != 'ENOENT') {
-                                return callback(error);
-                            }
-
-                            source.shallow = shallow ? shallow.trim() : false;
+                        source.execGit('rev-parse', 'shallow', function(error, shallow) {
+                            source.shallow = shallow == 'shallow' ? false : shallow;
                             callback();
                         });
                     }
