@@ -434,9 +434,9 @@ var getMktreeQueue = function() {
             output += data;
         });
 
-        mktree.stderr.on('data', function(data) {
-            app.log.error('mktree:', data);
-        });
+        // mktree.stderr.on('data', function(data) {
+        //     app.log.error('mktree:', data);
+        // });
 
         mktree.on('close', function(code) {
             callback(null, output.trim());
@@ -554,7 +554,7 @@ lib.execGit = function(execOptions, command, options, args, callback) {
         }
     }
 
-    app.log.info('git', gitArgs.join(' '));
+    app.log.debug('git', gitArgs.join(' '));
 
     if (execOptions.spawn) {
         if (typeof execOptions.spawn != 'object') {

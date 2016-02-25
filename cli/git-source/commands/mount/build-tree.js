@@ -8,8 +8,6 @@ var app = require('../../mount'),
     regExpQuote = require('regexp-quote');
 
 module.exports = function(callback) {
-    app.log.info('in `git mount build-tree`');
-
     async.auto({
         getSourcesMap: lib.getSourcesMap,
         getMounts: lib.getMounts,
@@ -98,8 +96,7 @@ module.exports = function(callback) {
                                     callback();
                                 });
                             } else {
-                                app.log.error();
-                                callback(new Error('mount source must be blob or tree: ' + quotedSourceRef));
+                                callback(new Error('mount source must be blob or tree: ' + sourceRef));
                             }
                         }
                     );
@@ -162,8 +159,9 @@ module.exports = function(callback) {
                     }
 
                     lib.execGit('commit-tree', commitOptions, tree, function(error, commit) {
-                        app.log.info('Created commit %s, advancing branch virtual', commit);
-                        lib.execGit('branch', '-f', 'virtual', commit, callback);
+                        lib.execGit('branch', '-f', 'virtual', commit, function(error) {
+                            callback(error, commit);
+                        });
                     });
                 });
             }
@@ -181,7 +179,7 @@ module.exports = function(callback) {
             console.log('%s\t%s\t%s', treePath.length, treePath.map(function(object) { return object.source.name; }).join(','), path);
         }
 
-        app.log.info('mount build-tree finished');
+        app.log.info('Created commit %s and updated branch virtual', results.commit);
         callback(null, true);
     });
 };

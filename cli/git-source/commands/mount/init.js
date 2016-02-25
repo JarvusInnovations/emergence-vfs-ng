@@ -5,8 +5,6 @@ var app = require('../../mount'),
     async = require('async');
 
 module.exports = function(callback) {
-    app.log.info('in `git mount init`');
-
     async.auto({
         getWorkTree: lib.getWorkTree,
         getSourcesMap: lib.getSourcesMap,
@@ -19,7 +17,6 @@ module.exports = function(callback) {
 
                 // any output means working tree is dirty
                 if (output) {
-                    app.log.error('Working tree is dirty. Commit, stash, or reset changes before proceeding.');
                     return callback(new Error('working tree is dirty'), false);
                 }
 
@@ -106,7 +103,6 @@ module.exports = function(callback) {
                                     ],
                                 callback);
                             } else {
-                                app.log.error();
                                 callback(new Error('mount source must be blob or tree'));
                             }
                         }
@@ -120,7 +116,7 @@ module.exports = function(callback) {
             return callback(error, false);
         }
 
-        app.log.info('mount init finished');
+        app.log.info('Wrote all mounts to %s', results.getWorkTree);
         callback(null, true);
     });
 };

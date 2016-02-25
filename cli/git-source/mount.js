@@ -15,9 +15,20 @@ app.config.env();
 
 // configure flatiron cli plugin
 app.use(flatiron.plugins.cli, {
-  source: path.join(__dirname, 'commands', 'mount'),
-  usage: 'Empty Flatiron Application, please fill out commands'
+    source: path.join(__dirname, 'commands', 'mount'),
+    usage: 'Empty Flatiron Application, please fill out commands',
+    argv: {
+        debug: {
+            alias: 'd',
+            description: 'Show debug output',
+            boolean: true
+        }
+    }
 });
 
 // start app
-app.start();
+app.start({
+    log: {
+        level: app.argv.debug ? 'debug' : 'info'
+    }
+});

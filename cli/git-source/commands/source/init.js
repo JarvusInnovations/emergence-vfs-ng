@@ -22,8 +22,6 @@ module.exports = function(callback) {
                             return callback(error);
                         }
 
-                        app.log.info('git:', output);
-
                         callback();
                     });
                 }, callback);
