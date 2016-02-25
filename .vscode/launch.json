@@ -21,6 +21,25 @@
 			"outDir": null
 		},
 		{
+			"name": "git-source show",
+			"type": "node",
+			"request": "launch",
+			"program": "${workspaceRoot}/cli/git-source/source.js",
+			"stopOnEntry": false,
+			"args": ["--debug", "show"],
+			"cwd": "${workspaceRoot}/mocks/spark-classroom-teacher",
+			"runtimeExecutable": null,
+			"runtimeArgs": [
+				"--nolazy"
+			],
+			"env": {
+				"NODE_ENV": "development"
+			},
+			"externalConsole": false,
+			"sourceMaps": false,
+			"outDir": null
+		},
+		{
 			"name": "git-mount init",
 			"type": "node",
 			"request": "launch",
