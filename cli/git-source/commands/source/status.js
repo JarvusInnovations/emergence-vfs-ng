@@ -99,6 +99,32 @@ module.exports = function(callback) {
                             callback();
                         });
                     }
+                ],
+
+                objectStats: [
+                    'initialized',
+                    function(callback) {
+                        if ('objectStats' in source) {
+                            return callback();
+                        }
+
+                        if (!source.initialized) {
+                            source.objectStats = null;
+                            return callback();
+                        }
+
+                        source.execGit('count-objects', { v: true }, function(error, output) {
+                            var objectStats = {};
+
+                            output.split(/\n/).forEach(function(line) {
+                                line = line.split(/\s*:\s*/);
+                                objectStats[line[0]] = parseInt(line[1]);
+                            });
+
+                            source.objectStats = objectStats;
+                            callback();
+                        });
+                    }
                 ]
             }, callback);
         }, function(error) {
@@ -108,14 +134,38 @@ module.exports = function(callback) {
             }
 
             console.log(Table.print(sources.map(function(source) {
-                // TODO: add fetch_head, head ?
+                // TODO: add composite head and date
                 return {
                     name: source.name,
                     initialized: source.initialized ? '\033[32myes\033[0m' : '\033[31mno\033[0m',
                     shallow: source.shallow === null ? '' : source.shallow === false ? '\033[31mno\033[0m' : source.shallowTag ? '\033[32m' + source.shallowTag + '\033[0m' : source.shallow.substr(0, 6),
-                    fetchHead: source.fetchHead === null ? '' : source.fetchHead === false ? '\033[31mno\033[0m' : source.fetchHeadTag ? '\033[32m' + source.fetchHeadTag + '\033[0m' : source.fetchHead.substr(0, 6)
+                    fetchHead: source.fetchHead === null ? '' : source.fetchHead === false ? '\033[31mno\033[0m' : source.fetchHeadTag ? '\033[32m' + source.fetchHeadTag + '\033[0m' : source.fetchHead.substr(0, 6),
+                    looseObjects: source.objectStats.count,
+                    looseBytes: source.objectStats.size,
+                    packedObjects: source.objectStats['in-pack'],
+                    packedBytes: source.objectStats['size-pack']
                 };
-            })));
+            }), {
+                fetchHead: {
+                    name: 'fetch'
+                },
+                looseObjects: {
+                    name: 'loose ob',
+                    printer: Table.number()
+                },
+                looseBytes: {
+                    name: 'loose KiB',
+                    printer: Table.number()
+                },
+                packedObjects: {
+                    name: 'packed ob',
+                    printer: Table.number()
+                },
+                packedBytes: {
+                    name: 'packed KiB',
+                    printer: Table.number()
+                },
+            }));
 
             callback();
         });
