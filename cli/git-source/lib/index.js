@@ -126,7 +126,7 @@ lib.getSources = function(callback) {
             }
 
             // 2) parse array of file objects out of multiline output string
-            var files = output.split(/\n/).map(function(line) {
+            var files = (output ? output.split(/\n/) : []).map(function(line) {
                 line = line.split(/\s/);
                 return {
                     mode: line[0],
