@@ -133,8 +133,11 @@ module.exports = function(callback) {
                 return callback(error);
             }
 
+            // TODO: implement --porcelain output
+
             console.log(Table.print(sources.map(function(source) {
                 // TODO: add composite head and date
+                // TODO: show behind/ahead stats vs remote
                 return {
                     name: source.name,
                     initialized: source.initialized ? '\033[32myes\033[0m' : '\033[31mno\033[0m',
