@@ -76,7 +76,7 @@ module.exports = function(callback) {
             console.log(Table.print(sources.map(function(source) {
                 return {
                     name: source.name,
-                    initialized: source.initialized ? 'yes' : 'no',
+                    initialized: source.initialized ? '\033[32myes\033[0m' : '\033[31mno\033[0m',
                     shallow: source.shallow === null ? '' : source.shallow === false ? '\033[31mno\033[0m' : source.shallowTag ? '\033[32m' + source.shallowTag + '\033[0m' : source.shallow.substr(0, 6)
                 };
             })));
