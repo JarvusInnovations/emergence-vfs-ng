@@ -57,21 +57,25 @@ module.exports = function(callback) {
         ],
 
         writeMounts: [
+            'getWorkTree',
             'getSourcesMap',
             'getMounts',
             'verifyWorkTreeClean',
             // 'verifyWorkTreeEmpty',
             function(callback, results) {
-                var sourcesMap = results.getSourcesMap;
+                var workTree = results.getWorkTree,
+                    sourcesMap = results.getSourcesMap;
 
                 async.eachSeries(results.getMounts, function(mount, callback) {
                     var source = sourcesMap[mount.source],
-                        quotedSourceRef = lib.shellQuote(source.branch + ':' + mount.sourcepath.substr(1)),
-                        quotedMountPath = lib.shellQuote(mount.mountpath);
+                        sourceRef = (source.branch + ':' + mount.sourcepath.substr(1)),
+                        quotedSourceRef = lib.shellQuote(sourceRef),
+                        quotedMountPath = lib.shellQuote(path.join(workTree, mount.mountpath));
 
                     source.execGit(
                         'cat-file',
-                        ['-t', quotedSourceRef],
+                        '-t',
+                        sourceRef,
                         function(error, output) {
                             if (error) {
                                 return callback(error);
@@ -80,6 +84,7 @@ module.exports = function(callback) {
                             // TODO: apply excludes?
                             if (output == 'tree') {
                                 source.execGit(
+                                    { shell: true },
                                     'archive',
                                     [
                                         quotedSourceRef,
@@ -93,10 +98,11 @@ module.exports = function(callback) {
                                 }
 
                                 source.execGit(
+                                    { shell: true },
                                     'show',
                                     [
-                                        quotedSourceRef,
-                                        '>', quotedMountPath
+                                        sourceRef,
+                                        '|', util.format('(mkdir -p $(dirname %s) && tee %s)', quotedMountPath, quotedMountPath)
                                     ],
                                 callback);
                             } else {

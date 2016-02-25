@@ -92,10 +92,10 @@ module.exports = function(callback) {
 
                         if (remoteOutput && remoteOutput.split('\n').indexOf('origin') != -1) {
                             app.log.info('Updating origin for', source.name, 'to', source.url);
-                            source.execGit('remote set-url', lib.shellQuote(['origin', source.url]), callback);
+                            source.execGit('remote', 'set-url', 'origin', source.url, callback);
                         } else {
                             app.log.info('Adding origin for', source.name, 'to', source.url);
-                            source.execGit('remote add', lib.shellQuote(['origin', source.url]), callback);
+                            source.execGit('remote', 'add', 'origin', source.url, callback);
                         }
                     });
                 }, callback);
@@ -105,7 +105,7 @@ module.exports = function(callback) {
             function(callback) {
                 async.each(sourcesMap, function(source, callback) {
                     app.log.info('Fetching', source.branch, 'for', source.name);
-                    source.execGit('fetch', { depth: 1 }, lib.shellQuote(['origin', source.branch + ':' + source.branch]), callback);
+                    source.execGit('fetch', { depth: 1 }, 'origin', source.branch + ':' + source.branch, callback);
                 }, callback);
             }
 

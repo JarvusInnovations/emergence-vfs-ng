@@ -28,11 +28,12 @@ module.exports = function(callback) {
 
                 async.eachSeries(results.getMounts, function(mount, callback) {
                     var source = sourcesMap[mount.source],
-                        quotedSourceRef = lib.shellQuote(source.branch + ':' + mount.sourcepath.substr(1));
+                        sourceRef = source.branch + ':' + mount.sourcepath.substr(1);
 
                     source.execGit(
                         'cat-file',
-                        ['-t', quotedSourceRef],
+                        '-t',
+                        sourceRef,
                         function(error, sourceObjectType) {
                             if (error) {
                                 return callback(error);
@@ -40,7 +41,7 @@ module.exports = function(callback) {
 
                             // TODO: apply excludes?
                             if (sourceObjectType == 'tree') {
-                                source.execGit('ls-tree', { r: true }, quotedSourceRef, function(error, treeBlobs) {
+                                source.execGit('ls-tree', { r: true }, sourceRef, function(error, treeBlobs) {
                                     treeBlobs = treeBlobs.split(/\n/); // it would probably be better to stream through the output and never capture+split the whole thing
 
                                     var lineRe = /^([^ ]+) ([^ ]+) ([^\t]+)\t(.*)/,
@@ -67,7 +68,7 @@ module.exports = function(callback) {
                                     callback();
                                 });
                             } else if (sourceObjectType == 'blob') {
-                                source.execGit('ls-tree', lib.shellQuote(source.branch + ':' + path.dirname(mount.sourcepath.substr(1))), function(error, treeBlobs) {
+                                source.execGit('ls-tree', source.branch + ':' + path.dirname(mount.sourcepath.substr(1)), function(error, treeBlobs) {
                                     var blobName = path.basename(mount.sourcepath),
                                         blobMatch = (new RegExp('[^ ]+ blob ([^\t]+)\t' + regExpQuote(blobName))).exec(treeBlobs),
                                         mountPath = mount.mountpath,

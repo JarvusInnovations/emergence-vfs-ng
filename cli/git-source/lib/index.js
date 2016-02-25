@@ -3,7 +3,7 @@ var app = require('flatiron').app,
     fs = require('fs'),
     async = require('async'),
     ini = require('ini'),
-    exec = require('child_process').exec,
+    child_process = require('child_process'),
 
     // container for exported library
     lib = module.exports = {},
@@ -310,11 +310,11 @@ lib.getMounts = function(callback) {
                         'full-name': true, // all paths relative to work tree root
                         'stage': true // include SHA1 in output
                     },
-                    lib.shellQuote([
+                    [
                         // prepend full path to working tree to prevent impact of CWD
                         workTree + '/.gitmounts/',
                         workTree + '/*/.gitmounts/*'
-                    ]),
+                    ],
                     function(error, output) {
                         if (error) {
                             return callback(error);
@@ -410,7 +410,7 @@ lib.getMounts = function(callback) {
 /**
  * Convert an options object into CLI arguments string
  */
-lib.cliOptionsToString = function(options) {
+lib.cliOptionsToArgs = function(options) {
     var args = [],
         k, val;
 
@@ -436,7 +436,7 @@ lib.cliOptionsToString = function(options) {
         }
     }
 
-    return args.join(' ');
+    return args;
 };
 
 
@@ -444,7 +444,8 @@ lib.cliOptionsToString = function(options) {
  * Execute git command and return trimmed output
  */
 lib.execGit = function(execOptions, command, options, args, callback) {
-    var execArgs = Array.prototype.slice.call(arguments);
+    var execArgs = Array.prototype.slice.call(arguments),
+        gitArgs = [];
 
     if (typeof execArgs[0] == 'object') {
         execOptions = execArgs.shift();
@@ -464,34 +465,53 @@ lib.execGit = function(execOptions, command, options, args, callback) {
         throw 'command required';
     }
 
-    // prefix command with git and gitOptions
+    // git options must come first, before git command
     if (execOptions.git) {
-        command = lib.cliOptionsToString(execOptions.git) +  ' ' + command;
+        gitArgs.push.apply(gitArgs, lib.cliOptionsToArgs(execOptions.git));
     }
 
-    command = 'git ' + command;
+    // git command comes up next
+    gitArgs.push(command);
 
     // append all remaining args
+    // TODO: build args array instead, use push and push.apply. Join at end or pass independently to execFile
     while (execArgs.length) {
         args = execArgs.shift();
 
         switch (typeof args) {
             case 'number':
             case 'string':
-                command += ' ' + args;
+                gitArgs.push(args.toString());
                 break;
             case 'object':
-                command += ' ' + (Array.isArray(args) ? args.join(' ') : lib.cliOptionsToString(args));
+                gitArgs.push.apply(gitArgs, Array.isArray(args) ? args : lib.cliOptionsToArgs(args));
                 break;
             default:
                 throw 'unhandled execGit argument'
         }
     }
 
-    app.log.info(command);
-    exec(command, callback ? function (error, stdout, stderr) {
-        callback(error, stdout ? stdout.trim() : null);
-    } : null);
+    app.log.info('git', gitArgs.join(' '));
+
+    if (execOptions.spawn) {
+        if (typeof execOptions.spawn != 'object') {
+            execOptions.spawn = {};
+        }
+
+        execOptions.spawn.shell = execOptions.shell;
+
+        return child_process.spawn('git', gitArgs, execOptions.spawn);
+    } else if(execOptions.shell) {
+        return child_process.exec('git ' + gitArgs.join(' '), callback ? function (error, stdout, stderr) {
+            gitArgs;
+            callback(error, stdout.trim());
+        } : null);
+    } else {
+        return child_process.execFile('git', gitArgs, callback ? function (error, stdout, stderr) {
+            gitArgs;
+            callback(error, stdout.trim());
+        } : null);
+    }
 };
 
 
