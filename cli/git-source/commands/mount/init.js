@@ -116,7 +116,7 @@ module.exports = function(callback) {
         ]
     }, function(error, results) {
         if (error) {
-            app.log.error('mount init failed:', error);
+            app.log.error('mount init failed:', error.message);
             return callback(error, false);
         }
 

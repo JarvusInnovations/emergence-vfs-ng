@@ -170,7 +170,7 @@ module.exports = function(callback) {
         ]
     }, function(error, results) {
         if (error) {
-            app.log.error('mount build-tree failed:', error);
+            app.log.error('mount build-tree failed:', error.message);
             return callback(error, false);
         }
         var tree = results.mapTree,
