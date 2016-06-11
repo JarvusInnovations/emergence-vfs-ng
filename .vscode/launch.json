@@ -114,6 +114,25 @@
 			"externalConsole": false,
 			"sourceMaps": false,
 			"outDir": null
+		},
+		{
+			"name": "git-server start",
+			"type": "node",
+			"request": "launch",
+			"program": "${workspaceRoot}/cli/server.js",
+			"stopOnEntry": false,
+			"args": ["--debug", "start"],
+			"cwd": "${workspaceRoot}/mocks",
+			"runtimeExecutable": null,
+			"runtimeArgs": [
+				"--nolazy"
+			],
+			"env": {
+				"NODE_ENV": "development"
+			},
+			"externalConsole": false,
+			"sourceMaps": false,
+			"outDir": null
 		}
 	]
 }
